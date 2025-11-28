@@ -32,8 +32,6 @@ ENV/
 # ML / AI WEIGHTS & MODELS
 # (Keep weights folder but ignore contents)
 # -----------------------------
-weights/*
-!weights/.gitkeep
 *.pt
 *.pth
 *.onnx
