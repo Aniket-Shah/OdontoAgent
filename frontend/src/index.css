@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* OdontoAgent Color System */
+    --background: 180 33% 84%; /* #C9E3E3 light teal */
+    --foreground: 201 44% 10%; /* #0F1E26 dark navy */
+
+    --card: 0 0% 100%; /* white cards */
+    --card-foreground: 201 44% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 201 44% 10%;
+
+    --primary: 180 32% 51%; /* #5CA8A8 teal */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 180 20% 75%;
+    --secondary-foreground: 201 44% 10%;
+
+    --muted: 180 25% 90%;
+    --muted-foreground: 180 10% 40%;
+
+    --accent: 180 35% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 180 20% 80%;
+    --input: 180 20% 90%;
+    --ring: 180 32% 51%;
+
+    --radius: 1.5rem; /* 24px rounded corners */
+
+    /* Confidence colors */
+    --confidence-high: 142 76% 36%;
+    --confidence-medium: 45 93% 47%;
+    --confidence-low: 0 72% 51%;
+
+    /* Sidebar - Dark teal theme */
+    --sidebar-background: 201 44% 10%; /* Dark navy */
+    --sidebar-foreground: 180 30% 95%; /* Light text */
+    --sidebar-primary: 180 32% 51%; /* Teal accent */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 180 35% 15%; /* Darker teal for hover */
+    --sidebar-accent-foreground: 180 30% 95%;
+    --sidebar-border: 180 20% 20%;
+    --sidebar-ring: 180 32% 51%;
+
+    /* Custom gradients */
+    --gradient-subtle: linear-gradient(135deg, hsl(180 35% 90%), hsl(180 30% 95%));
+    --gradient-primary: linear-gradient(135deg, hsl(180 32% 51%), hsl(180 35% 45%));
+    
+    /* Shadows */
+    --shadow-soft: 0 2px 8px -2px hsl(180 32% 51% / 0.1);
+    --shadow-medium: 0 4px 16px -4px hsl(180 32% 51% / 0.15);
+    --shadow-strong: 0 8px 24px -8px hsl(180 32% 51% / 0.2);
+  }
+
+  .dark {
+    --background: 201 44% 8%;
+    --foreground: 180 30% 95%;
+
+    --card: 201 40% 12%;
+    --card-foreground: 180 30% 95%;
+
+    --popover: 201 40% 12%;
+    --popover-foreground: 180 30% 95%;
+
+    --primary: 180 32% 51%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 201 35% 18%;
+    --secondary-foreground: 180 30% 95%;
+
+    --muted: 201 35% 20%;
+    --muted-foreground: 180 15% 60%;
+
+    --accent: 180 32% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 201 30% 18%;
+    --input: 201 30% 18%;
+    --ring: 180 32% 51%;
+
+    --sidebar-background: 201 44% 10%;
+    --sidebar-foreground: 180 30% 95%;
+    --sidebar-primary: 180 32% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 201 35% 15%;
+    --sidebar-accent-foreground: 180 30% 95%;
+    --sidebar-border: 201 30% 18%;
+    --sidebar-ring: 180 32% 51%;
+
+    /* Dark mode shadows */
+    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.4);
+    --shadow-strong: 0 8px 24px -8px hsl(0 0% 0% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
