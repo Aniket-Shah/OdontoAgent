@@ -1,0 +1,114 @@
+# -----------------------------
+# PYTHON
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+*.so
+*.dylib
+
+# Byte-compiled / optimized / DLL files
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# -----------------------------
+# FASTAPI / UVICORN
+# -----------------------------
+*.log
+*.db
+*.sqlite3
+
+# -----------------------------
+# ML / AI WEIGHTS & MODELS
+# (Keep weights folder but ignore contents)
+# -----------------------------
+weights/*
+!weights/.gitkeep
+*.pt
+*.pth
+*.onnx
+*.engine
+*.trt
+*.ckpt
+
+# -----------------------------
+# BUILD / EXPORT ARTIFACTS
+# -----------------------------
+*.onnx
+*.pt
+*.pth
+*.tensorrt
+*.engine
+
+# -----------------------------
+# PYTORCH / TORCH CACHE
+# -----------------------------
+~/.cache/torch_extensions/
+*.ptl
+
+# -----------------------------
+# EDITOR / SYSTEM FILES
+# -----------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# -----------------------------
+# LOGS
+# -----------------------------
+*.out
+*.err
+logs/
+*.log
+
+# -----------------------------
+# TEST OUTPUT
+# -----------------------------
+outputs/
+runs/
+runs/
+inference/
+export/
+temp/
+tmp/
+
+# -----------------------------
+# N8N / API
+# -----------------------------
+.env
+*.env
+.env.local
+.env.production
+
+# -----------------------------
+# NOTEBOOK CHECKPOINTS
+# -----------------------------
+.ipynb_checkpoints
+
+# -----------------------------
+# PYTEST CACHE
+# -----------------------------
+.pytest_cache/
+.cache/
+
+# -----------------------------
+# COMPRESSED
+# -----------------------------
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
