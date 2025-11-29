@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -16,66 +16,76 @@ export default function Signup() {
     confirm: "",
   });
 
-  const handleChange = (e: any) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const [passwordMatchError, setPasswordMatchError] = useState(false);
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+
+    // live password match check
+    if (name === "password" || name === "confirm") {
+      setPasswordMatchError(
+        name === "password"
+          ? value !== form.confirm
+          : form.password !== value
+      );
+    }
+  };
 
   const registerHandler = async () => {
-
-  if (!form.name || !form.email || !form.phone || !form.password || !form.confirm) {
-    alert("All fields are required");
-    return;
-  }
-
-  const emailRegex = /\S+@\S+\.\S+/;
-  if (!emailRegex.test(form.email)) {
-    alert("Invalid email format");
-    return;
-  }
-
-  if (!/^\d{10,15}$/.test(form.phone)) {
-    alert("Phone must be 10-15 digits");
-    return;
-  }
-
-  if (form.password.length < 6) {
-    alert("Password must be at least 6 characters");
-    return;
-  }
-
-  if (form.password !== form.confirm) {
-    alert("Passwords do not match");
-    return;
-  }
-
-  try {
-    const res = await fetch("http://localhost:5000/auth/signup", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        password: form.password,
-      }),
-    });
-
-    const data = await res.json();
-    console.log(data);
-    if (!res.ok) {
-        if (data.detail)
-            alert(data.detail);
-        else
-            alert(data.message);
+    if (!form.name || !form.email || !form.phone || !form.password || !form.confirm) {
+      alert("All fields are required");
       return;
     }
 
-    alert("Registration successful!");
-    navigate("/login");
-  } catch (err) {
-    // alert("Server not reachable");
-  }
-};
+    const emailRegex = /\S+@\S+\.\S+/;
+    if (!emailRegex.test(form.email)) {
+      alert("Invalid email format");
+      return;
+    }
+
+    if (!/^\d{10,15}$/.test(form.phone)) {
+      alert("Phone must be 10-15 digits");
+      return;
+    }
+
+    if (form.password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
+
+    if (form.password !== form.confirm) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:5000/auth/signup", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          password: form.password,
+        }),
+      });
+
+      const data = await res.json();
+      console.log(data);
+      if (!res.ok) {
+        if (data.detail) alert(data.detail);
+        else alert(data.message);
+        return;
+      }
+
+      alert("Registration successful!");
+      navigate("/login");
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -134,16 +144,27 @@ export default function Signup() {
               placeholder="**********"
               onChange={handleChange}
             />
+            {passwordMatchError && (
+              <p className="text-red-500 text-sm mt-1">
+                Passwords do not match
+              </p>
+            )}
           </div>
 
-          <Button className="w-full"
-                    disabled={
-                    !form.name || !form.email || !form.phone ||
-                    !form.password || !form.confirm
-                    }
-                    onClick={registerHandler}>
+          <Button
+            className="w-full"
+            disabled={
+              !form.name ||
+              !form.email ||
+              !form.phone ||
+              !form.password ||
+              !form.confirm ||
+              passwordMatchError
+            }
+            onClick={registerHandler}
+          >
             Register
-            </Button>
+          </Button>
 
           <div className="text-sm text-center text-gray-600">
             Already have an account? <Link to="/login">Login</Link>
