@@ -3,69 +3,121 @@ from PIL import Image, ImageDraw
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
-import json, io, requests, base64, os
+import json, io, requests, base64, os, re
+from bs4 import BeautifulSoup
 from datetime import datetime
 
 router = APIRouter()
 
-# --------------------------------------------------------
-# 1. Extract Drive ID cleanly
-# --------------------------------------------------------
-def make_drive_id(url: str) -> str:
-    """
-    Extract Google Drive file ID in a clean way.
-    """
-    if "id=" in url:
-        return url.split("id=")[1]
-    return url.split("/d/")[1].split("/")[0]
+# ----------------------------------------------
+# extract file id from file url
+# ----------------------------------------------
+def extract_file_id(url: str) -> str | None:
+    patterns = [
+        r"id=([^&]+)",
+        r"/d/([^/]+)",
+        r"uc\?export=download&id=([^&]+)"
+    ]
 
-# --------------------------------------------------------
-# 2. Convert Drive ID → Direct Download Link
-# --------------------------------------------------------
-def convert_drive_id_to_url(file_id: str):
-    return f"https://drive.google.com/uc?export=download&id={file_id}"
-
-# --------------------------------------------------------
-# 3. YOLO bbox convertor
-# --------------------------------------------------------
-def yolo_to_xyxy(bbox, img_w, img_h):
-    cx, cy, w, h = bbox
-    x1 = int((cx - w/2) * img_w)
-    y1 = int((cy - h/2) * img_h)
-    x2 = int((cx + w/2) * img_w)
-    y2 = int((cy + h/2) * img_h)
-    return x1, y1, x2, y2
+    for p in patterns:
+        m = re.search(p, url)
+        if m:
+            return m.group(1)
+    return None
 
 
-# --------------------------------------------------------
-# 4. API ROUTE
-# --------------------------------------------------------
+# -------------------------------------------------
+# read a Google Drive folder and get first file
+# -------------------------------------------------
+def extract_from_folder(folder_url: str):
+    html = requests.get(folder_url).text
+    soup = BeautifulSoup(html, "html.parser")
+
+    for a in soup.find_all("a"):
+        href = a.get("href", "")
+        if "/file/d/" in href:
+            return href.split("/d/")[1].split("/")[0]
+
+    raise ValueError("No file found in the folder. Add at least one image.")
+
+
+# ----------------------------------------------------
+# main extraction method
+# ----------------------------------------------------
+def get_google_drive_file_id(url: str):
+    if "/folders/" in url:
+        return extract_from_folder(url)
+
+    file_id = extract_file_id(url)
+    if file_id:
+        return file_id
+
+    raise ValueError("Invalid Google Drive link")
+
+
+# -------------------------------------------------
+# YOLO conversion
+# -------------------------------------------------
+def yolo_to_xyxy(bbox, w, h):
+    cx, cy, bw, bh = bbox
+    return (
+        int((cx - bw / 2) * w),
+        int((cy - bh / 2) * h),
+        int((cx + bw / 2) * w),
+        int((cy + bh / 2) * h)
+    )
+
+
+# -------------------------------------------------
+# MAIN API ROUTE
+# -------------------------------------------------
 @router.post("/draw")
-async def draw_boxes(
-    image_url: str = Form(...),
-    data: UploadFile = File(...)
-):
-    # ---------- DRIVE ID ----------
-    drive_id = make_drive_id(image_url)
-    direct_url = convert_drive_id_to_url(drive_id)
+async def draw_boxes(image_url: str = Form(...), data: UploadFile = File(...)):
 
-    # ---------- Download image ----------
-    response = requests.get(direct_url)
-    if response.status_code != 200:
-        return {"error": "Unable to download Google Drive image"}
+    # Extract the file id
+    try:
+        file_id = get_google_drive_file_id(image_url)
+    except Exception as e:
+        return {"error": str(e)}
+
+    direct_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+    # download image
+    session = requests.Session()
+    response = session.get(direct_url, allow_redirects=True)
+
+    content_type = response.headers.get("Content-Type", "")
+
+    if "image" not in content_type:
+        return {
+            "error": "Google Drive blocked the download.",
+            "reason": "The file is not public.",
+            "fix": "Right Click → Share → Anyone with link → Viewer",
+            "received": content_type,
+            "status": response.status_code,
+            "direct_url": direct_url
+        }
 
     img = Image.open(io.BytesIO(response.content)).convert("RGB")
     w, h = img.size
 
-    # ---------- Read JSON ----------
-    parsed = json.load(io.BytesIO(await data.read()))
+    # read YOLO JSON safely
+    content = await data.read()
+
+    try:
+        parsed = json.loads(content)
+    except:
+        return {
+            "error": "Uploaded file must be JSON",
+            "hint": "Do NOT upload image here. Only JSON."
+        }
+
     healthy = parsed[0].get("healthy_teeth", [])
     danger = parsed[0].get("danger_teeth", [])
     explanation = parsed[0].get("explanation", "")
 
     draw = ImageDraw.Draw(img)
 
-    # ---------- Draw boxes ----------
     for item in healthy:
         x1, y1, x2, y2 = yolo_to_xyxy(item["yolo_bbox"], w, h)
         draw.rectangle([x1, y1, x2, y2], outline="green", width=4)
@@ -74,52 +126,44 @@ async def draw_boxes(
         x1, y1, x2, y2 = yolo_to_xyxy(item["yolo_bbox"], w, h)
         draw.rectangle([x1, y1, x2, y2], outline="red", width=4)
 
-    # ---------- Save processed image ----------
-    output_image_path = f"output/processed_{drive_id}.jpg"
-    img.save(output_image_path)
+    os.makedirs("output", exist_ok=True)
 
-    # --------------------------------------------------------
-    # 5. Generate Professional PDF (ReportLab)
-    # --------------------------------------------------------
-    pdf_path = f"output/report_{drive_id}.pdf"
+    processed_path = f"output/processed_{file_id}.jpg"
+    img.save(processed_path)
+
+    # ---------------- PDF generation ----------------
+    pdf_path = f"output/report_{file_id}.pdf"
     c = canvas.Canvas(pdf_path, pagesize=A4)
     width, height = A4
 
-    # Title
     c.setFont("Helvetica-Bold", 20)
     c.drawString(40, height - 50, "Dental Radiograph AI Report")
 
-    # Date
     c.setFont("Helvetica", 12)
     c.drawString(40, height - 75, f"Generated On: {datetime.now().strftime('%d-%m-%Y %H:%M')}")
 
-    # Summary Boxes
     c.setFont("Helvetica-Bold", 14)
     c.drawString(40, height - 110, f"Healthy Teeth: {len(healthy)}")
     c.drawString(40, height - 130, f"Danger Teeth: {len(danger)}")
 
-    # Insert Image
-    img_reader = ImageReader(output_image_path)
-    c.drawImage(img_reader, 40, height - 500, width=500, preserveAspectRatio=True)
+    c.drawImage(ImageReader(processed_path), 40, height - 500, width=500, preserveAspectRatio=True)
 
-    # Explanation Text
     text_obj = c.beginText(40, 250)
     text_obj.setFont("Helvetica", 12)
+
     for line in explanation.split("\n"):
         text_obj.textLine(line)
-    c.drawText(text_obj)
 
+    c.drawText(text_obj)
     c.save()
 
-    # --------------------------------------------------------
-    # Return base64 + PDF path
-    # --------------------------------------------------------
-    with open(output_image_path, "rb") as f:
-        base64_image = base64.b64encode(f.read()).decode()
+    # return encoded image
+    with open(processed_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode()
 
     return {
         "status": "success",
-        "drive_id": drive_id,
-        "processed_image_base64": base64_image,
+        "file_id": file_id,
+        "processed_image": b64,
         "pdf_path": pdf_path
     }

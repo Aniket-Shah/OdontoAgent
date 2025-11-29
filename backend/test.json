@@ -1,0 +1,11 @@
+[
+    {
+        "healthy_teeth": [
+            {"yolo_bbox": [0.5, 0.5, 0.2, 0.2]}
+        ],
+        "danger_teeth": [
+            {"yolo_bbox": [0.2, 0.3, 0.4, 0.2]}
+        ],
+        "explanation": "Some text explanation"
+    }
+]
