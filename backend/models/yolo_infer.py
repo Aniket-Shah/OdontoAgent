@@ -1,6 +1,6 @@
 from ultralytics import YOLO
 
-model = YOLO('weights/yolov8_dental.pt')
+model = YOLO('yolov8n.pt')
 
 def run_yolo(img_bgr):
     results = model.predict(img_bgr, conf=0.25)

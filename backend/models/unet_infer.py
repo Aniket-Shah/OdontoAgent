@@ -14,7 +14,7 @@ model = smp.UnetPlusPlus(
     classes=1
 ).to(device)
 
-state=torch.load('weights/unetpp_dental.pth', map_location=device)
+state=torch.load('weights/unetpp.pth', map_location=device)
 model.load_state_dict(state)
 model.eval()
 
