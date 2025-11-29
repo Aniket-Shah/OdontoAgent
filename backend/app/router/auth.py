@@ -6,8 +6,6 @@ from app.models import User
 from app.db import get_db
 from app.schemas import SignupSchema, LoginSchema, EmailSchema
 
-
-
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 SECRET_KEY = "MYSECRET"
@@ -21,13 +19,14 @@ pwd_context = CryptContext(
 # ---------------------------------------------------------
 @router.post("/signup")
 def signup(user: SignupSchema, db: Session = Depends(get_db)):
-    
+
+    # convert email to lowercase
+    email = user.email.lower()
 
     try:
-        db_user = db.query(User).filter(User.email == user.email).first()
-        
+        db_user = db.query(User).filter(User.email == email).first()
+
     except Exception as e:
-        
         raise HTTPException(500, str(e))
 
     if db_user:
@@ -35,14 +34,12 @@ def signup(user: SignupSchema, db: Session = Depends(get_db)):
 
     try:
         hashed_pass = pwd_context.hash(user.password)
-        
     except Exception as e:
-        
         raise HTTPException(500, str(e))
 
     new_user = User(
         name=user.name,
-        email=user.email,
+        email=email,           # save lowercase email
         phone=user.phone,
         password=hashed_pass
     )
@@ -51,7 +48,6 @@ def signup(user: SignupSchema, db: Session = Depends(get_db)):
         db.add(new_user)
         db.commit()
     except Exception as e:
-        
         raise HTTPException(500, str(e))
 
     return {"message": "Registration successful"}
@@ -60,12 +56,16 @@ def signup(user: SignupSchema, db: Session = Depends(get_db)):
 # ---------------------------------------------------------
 @router.post("/login")
 def login(user: LoginSchema, request: Request, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
+    
+    # lowercase email
+    email = user.email.lower()
+
+    db_user = db.query(User).filter(User.email == email).first()
 
     if not db_user or not pwd_context.verify(user.password, db_user.password):
         raise HTTPException(401, "Invalid credentials")
 
-    # ✅ store in session
+    # store in session
     request.session["user_email"] = db_user.email
 
     return {
@@ -83,7 +83,10 @@ def login(user: LoginSchema, request: Request, db: Session = Depends(get_db)):
 @router.post("/forgot-password")
 def forgot(data: EmailSchema, db: Session = Depends(get_db)):
 
-    db_user = db.query(User).filter(User.email == data.email).first()
+    # lowercase email
+    email = data.email.lower()
+
+    db_user = db.query(User).filter(User.email == email).first()
     if not db_user:
         raise HTTPException(404, "Email not found")
 
@@ -97,10 +100,10 @@ def logout(request: Request):
     return {"message": "Logged out"}
 
 
-#---------------------------------------------------------
+# ---------------------------------------------------------
 @router.get("/me")
 def me(request: Request):
-    print("SESSION DATA:", request.session)  # debug
+    print("SESSION DATA:", request.session)
     email = request.session.get("user_email")
     if not email:
         raise HTTPException(401, "Not logged in")
